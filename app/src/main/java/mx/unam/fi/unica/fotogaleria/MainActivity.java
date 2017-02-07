@@ -7,11 +7,15 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.MediaScannerConnection;
+import android.media.audiofx.BassBoost;
 import android.net.Uri;
 import android.os.Build;
 import android.os.CancellationSignal;
 import android.os.Environment;
+import android.os.PersistableBundle;
 import android.provider.MediaStore;
+import android.provider.Settings;
+import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -140,10 +144,27 @@ public class MainActivity extends AppCompatActivity {
                 {
 
                     requestPermissions(new String[]{WRITE_EXTERNAL_STORAGE,CAMERA},MIS_PERMISOS);
+
                 }
-            });
+            }).show();
+        }
+        else
+        {
+            requestPermissions(new String[]{WRITE_EXTERNAL_STORAGE,CAMERA},MIS_PERMISOS);
         }
         return false;
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putString("file_path",mRuta);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        mRuta = savedInstanceState.getString("file_path");
     }
 
     @Override
@@ -173,5 +194,46 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
+        if(requestCode == MIS_PERMISOS)
+        {
+            if(grantResults.length == 2 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED)
+            {
+                Snackbar.make(activity_main,"Permisos aceptados",Snackbar.LENGTH_LONG).show();
+                btn_seleccion.setEnabled(true);
+            }
+        }else
+        {
+            muestraExplicacion();
+        }
+    }
+
+    private void muestraExplicacion() {
+        AlertDialog.Builder  builder= new AlertDialog.Builder(this);
+        builder.setTitle("Permisos denegados");
+        builder.setMessage("Para usar las funciones de la app necesitas aceptar los permisos");
+        builder.setPositiveButton("Aceptar", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                Intent intent = new Intent();
+                intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS );
+                Uri uri = Uri.fromParts("package",getPackageName(),null);
+                intent.setData(uri);
+                startActivity(intent);
+
+            }
+        });
+
+        builder.setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+                finish();
+            }
+        });
+        builder.show();
+    }
 }
